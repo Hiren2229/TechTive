@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="view_move_form">
+            <field name="name">account.move.form.easy</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_move_form" />
+            <field name="arch" type="xml">
+                <header position="inside">
+                    <button name="generate_barcode" string="Generate Barcode" type="object"/>
+                </header>
+                <field name="partner_id" position="after">
+                    <field name='barcode' />
+                </field>
+            </field>
+        </record>
+        <template id="report_invoice_document" inherit_id="account.report_invoice_document">
+            <xpath expr="//div[@class='page']" position="before">
+                <div class="pull-right mb16" name="right_box">
+                    <center><img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', o.barcode, 600, 100)" style="width:300px;height:50px;"/>
+                    <div t-esc="o.barcode"/></center>
+                </div>
+            </xpath>
+        </template>
+    </data>
+</odoo>
