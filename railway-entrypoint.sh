@@ -72,6 +72,11 @@ if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 0 ]]; then
   python3 /railway_sync_web_base_url.py || true
 fi
 
+# One-shot: ODOO_REPAIR_WEB_ASSETS=1 deletes stale /web/assets rows after filestore loss (see script docstring).
+if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 0 ]]; then
+  python3 /railway_repair_web_assets.py || true
+fi
+
 # Do NOT use -d <db>: after DROP DATABASE, Odoo would crash on every request until DB exists again.
 #
 # db-filter: regex of Postgres DB names shown in Database Manager. Default .* avoids mismatch with DATABASE_URL.
