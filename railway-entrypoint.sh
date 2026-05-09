@@ -84,4 +84,5 @@ if [[ -n "${DB_NAME_VAL}" ]]; then
   FILTER_ARGS=( "--db-filter=${FILTER_PATTERN}" )
 fi
 
-exec /entrypoint.sh odoo --http-port="$HTTP_PORT" "${FILTER_ARGS[@]}" "${EXTRA[@]}"
+# Railway terminates TLS at the edge; Odoo must trust X-Forwarded-* so CSS/JS asset URLs use https://…
+exec /entrypoint.sh odoo --http-port="$HTTP_PORT" --proxy-mode "${FILTER_ARGS[@]}" "${EXTRA[@]}"
