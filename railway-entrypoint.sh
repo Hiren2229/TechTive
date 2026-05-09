@@ -56,15 +56,16 @@ export USER="$DB_USER_VAL"
 export PASSWORD="$DB_PASS_VAL"
 export ODOO_DATABASE_NAME="$DB_NAME_VAL"
 
-# Auto-init base only when the DB exists but has no Odoo tables (not when DB was dropped).
-# Exit 2 from railway_db_ready = database missing → skip (use Database Manager / restore).
+# Auto-init base when DB exists but Odoo is not usable (no installed ``base`` → KeyError ir.http on /web).
+# Exit 2 from railway_db_ready = database missing → skip auto-init.
 db_status=0
 python3 /railway_db_ready.py || db_status=$?
 
-# Default off: empty DB is for Restore via Database Manager. Set ODOO_AUTO_INIT_BASE=1 for greenfield (-i base).
-if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 1 ]] && [[ "${ODOO_AUTO_INIT_BASE:-0}" == "1" ]]; then
+# Default: initialize greenfield Railway DBs. Set ODOO_SKIP_AUTO_INIT_BASE=1 if you restore into this DB name first.
+if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 1 ]] && [[ "${ODOO_SKIP_AUTO_INIT_BASE:-0}" != "1" ]]; then
   echo "Initializing Odoo database ${DB_NAME_VAL} (base modules only, no demo data)..." >&2
   /entrypoint.sh odoo -d "$DB_NAME_VAL" -i base --stop-after-init --without-demo=all
+  db_status=0
 fi
 
 # Sync Odoo web.base.url from WEB_BASE_URL or RAILWAY_PUBLIC_DOMAIN (fixes wrong domain / backend redirects).

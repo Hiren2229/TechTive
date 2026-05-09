@@ -2,9 +2,9 @@
 """Check Odoo DB state for the entrypoint.
 
 Exit codes:
-  0 — database exists and has Odoo tables (ready).
-  1 — database exists but is not initialized (optional auto-init with base).
-  2 — database does not exist (skip auto-init; use Database Manager / restore).
+  0 — database exists and ``base`` is installed (Odoo can serve HTTP).
+  1 — database exists but is not initialized (run ``-i base`` unless skipped).
+  2 — database does not exist (skip auto-init; create DB or restore elsewhere).
 """
 from __future__ import annotations
 
@@ -37,11 +37,20 @@ def main() -> int:
     try:
         cur = conn.cursor()
         cur.execute("SELECT to_regclass('public.ir_module_module')")
-        reg = cur.fetchone()[0]
+        if not cur.fetchone()[0]:
+            cur.close()
+            return 1
+        cur.execute(
+            "SELECT state FROM ir_module_module WHERE name = %s",
+            ("base",),
+        )
+        row = cur.fetchone()
         cur.close()
     finally:
         conn.close()
-    return 0 if reg else 1
+    if not row or row[0] != "installed":
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
