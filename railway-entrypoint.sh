@@ -69,10 +69,10 @@ fi
 
 # Do NOT use -d <db>: after DROP DATABASE, Odoo would crash on every request until DB exists again.
 #
-# db-filter controls which DB names appear in the Database Manager / selector. A strict filter like
-# ^railway$ hides restores that used another name (e.g. TechnoTiv). Default .* lists every Odoo DB on
-# this Postgres instance (fine for single-tenant Railway). Tighten after restore:
-#   Railway → TechTive → Variables → ODOO_DB_FILTER=^railway$
+# db-filter: only matching Postgres DB names appear in the Database Manager / selector.
+# Default production DB TechTive_Prod (?i = case-insensitive; Postgres often stores lowercase).
+# Ensure DATABASE_URL ends with /TechTive_Prod (or the actual lowercase name) and that DB exists.
+# Override anytime: Railway → TechTive → Variables → ODOO_DB_FILTER (e.g. .* while migrating).
 EXTRA=( "$@" )
 if [[ ${#EXTRA[@]} -ge 1 && "${EXTRA[0]}" == "odoo" ]]; then
   EXTRA=( "${EXTRA[@]:1}" )
@@ -80,7 +80,7 @@ fi
 
 FILTER_ARGS=()
 if [[ -n "${DB_NAME_VAL}" ]]; then
-  FILTER_PATTERN="${ODOO_DB_FILTER:-.*}"
+  FILTER_PATTERN="${ODOO_DB_FILTER:-(?i)^TechTive_Prod\$}"
   FILTER_ARGS=( "--db-filter=${FILTER_PATTERN}" )
 fi
 
