@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Remove broken bundled asset attachments so Odoo regenerates CSS/JS from module static files.
+"""Auto-fix missing bundled CSS/JS after filestore loss (ephemeral disk on Railway).
 
-Odoo stores compiled bundles under ir_attachment URLs like /web/assets/… on disk in filestore.
-Railway containers lose /var/lib/odoo on redeploy while Postgres survives → FileNotFoundError on /web.
+Odoo keeps rows in ir_attachment for compiled bundles under URLs /web/assets/… while files live under
+data_dir/filestore/<dbname>. If the container filesystem was wiped, requests 500 with FileNotFoundError.
 
-Set ODOO_REPAIR_WEB_ASSETS=1 once on TechTive, redeploy, verify UI, then remove the variable.
+On each boot we sample on-disk paths; if any sample is missing, we DELETE those attachment rows so Odoo
+regenerates bundles from addons.
 
-Does not restore user uploads (PDFs, logos); add a Railway Volume on /var/lib/odoo + restore backup for that.
+Opt out: ODOO_SKIP_ASSET_REPAIR=1
+
+User uploads (PDFs, etc.) are NOT touched—only url LIKE '/web/assets/%'. For persistence mount a
+Railway Volume on /var/lib/odoo and restore filestore from backup.
 """
 from __future__ import annotations
 
@@ -15,9 +19,12 @@ import sys
 
 import psycopg2
 
+DATA_DIR = os.environ.get("ODOO_DATA_DIR", "/var/lib/odoo").rstrip("/")
+SAMPLE_LIMIT = 15
+
 
 def main() -> int:
-    if os.environ.get("ODOO_REPAIR_WEB_ASSETS", "").strip() != "1":
+    if os.environ.get("ODOO_SKIP_ASSET_REPAIR", "").strip() == "1":
         return 0
 
     db = os.environ.get("ODOO_DATABASE_NAME", "").strip()
@@ -34,7 +41,7 @@ def main() -> int:
             connect_timeout=15,
         )
     except Exception as e:
-        print(f"railway_repair_web_assets: skip: {e}", file=sys.stderr)
+        print(f"railway_repair_web_assets: skip (DB): {e}", file=sys.stderr)
         return 0
 
     try:
@@ -46,13 +53,42 @@ def main() -> int:
 
         cur.execute(
             """
+            SELECT store_fname FROM ir_attachment
+            WHERE url LIKE '/web/assets/%%' AND store_fname IS NOT NULL
+            LIMIT %s
+            """,
+            (SAMPLE_LIMIT,),
+        )
+        paths = [r[0] for r in cur.fetchall() if r and r[0]]
+        if not paths:
+            cur.close()
+            return 0
+
+        fs_root = os.path.join(DATA_DIR, "filestore", db)
+        broken = False
+        for rel in paths:
+            full = os.path.join(fs_root, rel)
+            if not os.path.isfile(full):
+                broken = True
+                break
+
+        if not broken:
+            cur.close()
+            return 0
+
+        cur.execute(
+            """
             DELETE FROM ir_attachment
-            WHERE url LIKE '/web/assets/%'
+            WHERE url LIKE '/web/assets/%%'
             """
         )
         n = cur.rowcount
         cur.close()
-        print(f"railway_repair_web_assets: deleted {n} stale /web/assets attachment row(s).", file=sys.stderr)
+        print(
+            f"railway_repair_web_assets: filestore incomplete under {fs_root!r}; "
+            f"removed {n} /web/assets attachment row(s) for regeneration.",
+            file=sys.stderr,
+        )
     finally:
         conn.close()
     return 0

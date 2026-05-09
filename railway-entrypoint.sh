@@ -72,7 +72,7 @@ if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 0 ]]; then
   python3 /railway_sync_web_base_url.py || true
 fi
 
-# One-shot: ODOO_REPAIR_WEB_ASSETS=1 deletes stale /web/assets rows after filestore loss (see script docstring).
+# Auto-repair stale /web/assets attachments when filestore files are missing (Railway ephemeral disk).
 if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 0 ]]; then
   python3 /railway_repair_web_assets.py || true
 fi
