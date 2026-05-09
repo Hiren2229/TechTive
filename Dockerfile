@@ -8,8 +8,9 @@ COPY project_scrum /mnt/extra-addons/project_scrum
 COPY project_timeline /mnt/extra-addons/project_timeline
 COPY web_timeline /mnt/extra-addons/web_timeline
 
+COPY railway_bootstrap_db.py /railway_bootstrap_db.py
 COPY railway-entrypoint.sh /railway-entrypoint.sh
-RUN chmod +x /railway-entrypoint.sh \
+RUN chmod +x /railway-entrypoint.sh /railway_bootstrap_db.py \
     && chown -R odoo:odoo /mnt/extra-addons
 
 USER odoo

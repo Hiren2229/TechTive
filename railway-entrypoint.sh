@@ -9,12 +9,14 @@ DB_HOST_VAL=""
 DB_PORT_VAL="5432"
 DB_USER_VAL=""
 DB_PASS_VAL=""
+DB_NAME_VAL=""
 
 if [[ -n "${PGHOST:-}" ]]; then
   DB_HOST_VAL="$PGHOST"
   DB_PORT_VAL="${PGPORT:-5432}"
   DB_USER_VAL="${PGUSER:-postgres}"
   DB_PASS_VAL="${PGPASSWORD:-}"
+  DB_NAME_VAL="${PGDATABASE:-}"
 elif [[ -n "${DATABASE_URL:-}" ]]; then
   eval "$(python3 <<'PY'
 import os
@@ -31,12 +33,21 @@ host = parsed.hostname or ""
 port = str(parsed.port or 5432)
 user = u.unquote(parsed.username or "")
 password = u.unquote(parsed.password or "")
+dbname = (parsed.path or "").lstrip("/")
 print(f"DB_HOST_VAL={shlex.quote(host)}")
 print(f"DB_PORT_VAL={shlex.quote(port)}")
 print(f"DB_USER_VAL={shlex.quote(user)}")
 print(f"DB_PASS_VAL={shlex.quote(password)}")
+print(f"DB_NAME_VAL={shlex.quote(dbname)}")
 PY
 )"
+fi
+
+# Odoo refuses the PostgreSQL superuser name `postgres`; provision `odoo` if needed.
+if [[ "${DB_USER_VAL}" == "postgres" && -n "${DATABASE_URL:-}" ]]; then
+  python3 /railway_bootstrap_db.py
+  DB_USER_VAL="${ODOO_DB_USER:-odoo}"
+  DB_PASS_VAL="${ODOO_DB_PASSWORD:-$DB_PASS_VAL}"
 fi
 
 export HOST="$DB_HOST_VAL"
@@ -49,4 +60,10 @@ EXTRA=( "$@" )
 if [[ ${#EXTRA[@]} -ge 1 && "${EXTRA[0]}" == "odoo" ]]; then
   EXTRA=( "${EXTRA[@]:1}" )
 fi
-exec /entrypoint.sh odoo --http-port="$HTTP_PORT" "${EXTRA[@]}"
+
+DB_ARG=()
+if [[ -n "${DB_NAME_VAL}" ]]; then
+  DB_ARG=( -d "$DB_NAME_VAL" )
+fi
+
+exec /entrypoint.sh odoo --http-port="$HTTP_PORT" "${DB_ARG[@]}" "${EXTRA[@]}"
