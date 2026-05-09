@@ -47,6 +47,12 @@ def main() -> int:
             sql.Identifier(dbname), sql.Identifier(odoo_user)
         )
     )
+    # Odoo's Database Manager runs DROP DATABASE as db_user; only owners/superusers can drop.
+    cur.execute(
+        sql.SQL("ALTER DATABASE {} OWNER TO {}").format(
+            sql.Identifier(dbname), sql.Identifier(odoo_user)
+        )
+    )
     cur.close()
     conn.close()
 
