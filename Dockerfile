@@ -17,6 +17,7 @@ COPY railway_sync_web_base_url.py /railway_sync_web_base_url.py
 COPY railway_repair_web_assets.py /railway_repair_web_assets.py
 COPY railway-entrypoint.sh /railway-entrypoint.sh
 RUN chmod +x /railway-entrypoint.sh /railway_bootstrap_db.py /railway_db_ready.py /railway_sync_web_base_url.py /railway_repair_web_assets.py \
+    && test -f /railway_repair_web_assets.py \
     && chown -R odoo:odoo /mnt/extra-addons
 
 USER odoo

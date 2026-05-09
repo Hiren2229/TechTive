@@ -72,17 +72,21 @@ if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 0 ]]; then
   python3 /railway_sync_web_base_url.py || true
 fi
 
-# Auto-repair stale /web/assets attachments when filestore files are missing (Railway ephemeral disk).
+# Always reset compiled /web/assets rows so Odoo regenerates after empty filestore (see railway_repair_web_assets.py).
 if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 0 ]]; then
-  python3 /railway_repair_web_assets.py || true
+  if [[ -f /railway_repair_web_assets.py ]]; then
+    python3 /railway_repair_web_assets.py || echo "railway_repair_web_assets: failed (exit $?)" >&2
+  else
+    echo "railway-entrypoint: MISSING /railway_repair_web_assets.py — rebuild image without Docker cache" >&2
+  fi
 fi
 
 # Do NOT use -d <db>: after DROP DATABASE, Odoo would crash on every request until DB exists again.
 #
 # db-filter: which Postgres DB names appear in Database Manager / selector.
-# Default matches production DB TechTive_Live (?i = case-insensitive for Postgres fold e.g. techtive_live).
-# Railway DATABASE_URL must end with the same name: ...postgresql://...@host:port/TechTive_Live
-# Override: ODOO_DB_FILTER e.g. .* for migrations or (?i)^OtherDb$
+# Default matches TechTive_* (Live / legacy Prod) while migrating DB names. Tighten later: (?i)^TechTive_Live$
+# DATABASE_URL path must be your real Postgres datname (e.g. TechTive_Live). Drop ?db=TechTive_Prod bookmarks if obsolete.
+# Override: ODOO_DB_FILTER e.g. .*
 EXTRA=( "$@" )
 if [[ ${#EXTRA[@]} -ge 1 && "${EXTRA[0]}" == "odoo" ]]; then
   EXTRA=( "${EXTRA[@]:1}" )
@@ -90,7 +94,7 @@ fi
 
 FILTER_ARGS=()
 if [[ -n "${DB_NAME_VAL}" ]]; then
-  FILTER_PATTERN="${ODOO_DB_FILTER:-(?i)^TechTive_Live\$}"
+  FILTER_PATTERN="${ODOO_DB_FILTER:-(?i)^TechTive_.*\$}"
   FILTER_ARGS=( "--db-filter=${FILTER_PATTERN}" )
 fi
 
