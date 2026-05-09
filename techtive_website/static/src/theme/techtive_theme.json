@@ -1,0 +1,19 @@
+{
+  "name": "TechTive",
+  "tagline": "Intelligent solutions",
+  "version": "1.0.0",
+  "colors": {
+    "primary": "#1B63A9",
+    "primary_medium": "#4A90E2",
+    "accent": "#27AE60",
+    "dark_navy": "#0F172A",
+    "surface_muted": "#F0F4F8",
+    "white": "#FFFFFF",
+    "text_muted": "#64748B",
+    "text_on_dark": "#E6F1FF"
+  },
+  "fonts": {
+    "website": "Roboto",
+    "headings": "Roboto"
+  }
+}

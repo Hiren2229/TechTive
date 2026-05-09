@@ -1,0 +1,5 @@
+// Bootstrap semantic colors for the website bundle
+$o-user-theme-color-palette: map-merge($o-user-theme-color-palette, (
+    'success': #27AE60,
+    'info': #4A90E2,
+));

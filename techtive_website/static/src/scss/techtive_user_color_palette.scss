@@ -1,0 +1,11 @@
+// TechTive brand palette — keep hex values aligned with static/src/theme/techtive_theme.json
+$o-user-color-palette: map-merge($o-user-color-palette, (
+    'o-color-1': #1B63A9,
+    'o-color-2': #27AE60,
+    'o-color-3': #F0F4F8,
+    'o-color-4': #FFFFFF,
+    'o-color-5': #0F172A,
+    'o-cc1-link': #1B63A9,
+    'o-cc1-headings': #0F172A,
+    'o-cc1-btn-primary': #1B63A9,
+));

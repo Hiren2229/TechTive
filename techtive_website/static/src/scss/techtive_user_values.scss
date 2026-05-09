@@ -1,0 +1,7 @@
+// Website typography — keep in sync with static/src/theme/techtive_theme.json
+$o-user-website-values: map-merge($o-user-website-values, (
+    'font': 'Roboto',
+    'headings-font': 'Roboto',
+    'navbar-font': 'Roboto',
+    'buttons-font': 'Roboto',
+));
