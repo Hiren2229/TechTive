@@ -10,8 +10,9 @@ COPY web_timeline /mnt/extra-addons/web_timeline
 
 COPY railway_bootstrap_db.py /railway_bootstrap_db.py
 COPY railway_db_ready.py /railway_db_ready.py
+COPY railway_sync_web_base_url.py /railway_sync_web_base_url.py
 COPY railway-entrypoint.sh /railway-entrypoint.sh
-RUN chmod +x /railway-entrypoint.sh /railway_bootstrap_db.py /railway_db_ready.py \
+RUN chmod +x /railway-entrypoint.sh /railway_bootstrap_db.py /railway_db_ready.py /railway_sync_web_base_url.py \
     && chown -R odoo:odoo /mnt/extra-addons
 
 USER odoo

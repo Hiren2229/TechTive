@@ -67,12 +67,15 @@ if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 1 ]] && [[ "${ODOO_AUTO_INIT
   /entrypoint.sh odoo -d "$DB_NAME_VAL" -i base --stop-after-init --without-demo=all
 fi
 
+# Sync Odoo web.base.url from WEB_BASE_URL or RAILWAY_PUBLIC_DOMAIN (fixes wrong domain / backend redirects).
+if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 0 ]]; then
+  python3 /railway_sync_web_base_url.py || true
+fi
+
 # Do NOT use -d <db>: after DROP DATABASE, Odoo would crash on every request until DB exists again.
 #
-# db-filter: only matching Postgres DB names appear in the Database Manager / selector.
-# Default production DB TechTive_Prod (?i = case-insensitive; Postgres often stores lowercase).
-# Ensure DATABASE_URL ends with /TechTive_Prod (or the actual lowercase name) and that DB exists.
-# Override anytime: Railway → TechTive → Variables → ODOO_DB_FILTER (e.g. .* while migrating).
+# db-filter: regex of Postgres DB names shown in Database Manager. Default .* avoids mismatch with DATABASE_URL.
+# For production-only listing set Railway → ODOO_DB_FILTER e.g. (?i)^TechTive_Prod$
 EXTRA=( "$@" )
 if [[ ${#EXTRA[@]} -ge 1 && "${EXTRA[0]}" == "odoo" ]]; then
   EXTRA=( "${EXTRA[@]:1}" )
@@ -80,7 +83,7 @@ fi
 
 FILTER_ARGS=()
 if [[ -n "${DB_NAME_VAL}" ]]; then
-  FILTER_PATTERN="${ODOO_DB_FILTER:-(?i)^TechTive_Prod\$}"
+  FILTER_PATTERN="${ODOO_DB_FILTER:-.*}"
   FILTER_ARGS=( "--db-filter=${FILTER_PATTERN}" )
 fi
 
