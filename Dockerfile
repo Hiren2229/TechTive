@@ -15,14 +15,7 @@ COPY railway_db_ready.py /railway_db_ready.py
 COPY railway_sync_web_base_url.py /railway_sync_web_base_url.py
 COPY railway_repair_web_assets.py /railway_repair_web_assets.py
 COPY railway-entrypoint.sh /railway-entrypoint.sh
-# Persist default DB in the image (SSH/container edits to /etc/odoo/odoo.conf do not survive redeploys).
-# Railway DATABASE_URL must end with the same Postgres datname, e.g. ...postgresql://...@host:port/TT_Prod
-RUN if grep -q '^db_name[[:space:]]*=' /etc/odoo/odoo.conf 2>/dev/null; then \
-      sed -i 's/^db_name[[:space:]]=.*/db_name = TT_Prod/' /etc/odoo/odoo.conf; \
-    else \
-      sed -i '/^\[options\]/a db_name = TT_Prod' /etc/odoo/odoo.conf; \
-    fi \
-    && grep -q '^db_name = TT_Prod' /etc/odoo/odoo.conf
+# Do not set db_name in odoo.conf — it must match DATABASE_URL or scripts target one DB and Odoo serves another.
 RUN chmod +x /railway-entrypoint.sh /railway_bootstrap_db.py /railway_db_ready.py /railway_sync_web_base_url.py /railway_repair_web_assets.py \
     && test -f /railway_repair_web_assets.py \
     && chown -R odoo:odoo /mnt/extra-addons

@@ -82,7 +82,7 @@ if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 0 ]]; then
   fi
 fi
 
-# Do NOT use -d <db>: after DROP DATABASE, Odoo would crash on every request until DB exists again.
+# Pass -d from DATABASE_URL so Odoo uses the same DB as bootstrap/sync/repair scripts (odoo.conf db_name caused drift).
 #
 # db-filter: which Postgres DB names appear in Database Manager / selector.
 # Default .* — Railway often uses DATABASE_URL db "railway" but restores create another datname
@@ -94,7 +94,9 @@ if [[ ${#EXTRA[@]} -ge 1 && "${EXTRA[0]}" == "odoo" ]]; then
 fi
 
 FILTER_ARGS=()
+ODOO_DB_ARGS=()
 if [[ -n "${DB_NAME_VAL}" ]]; then
+  ODOO_DB_ARGS=( -d "$DB_NAME_VAL" )
   if [[ -n "${ODOO_DB_FILTER:-}" ]]; then
     FILTER_PATTERN="$ODOO_DB_FILTER"
   elif [[ "${ODOO_DB_STRICT_FILTER:-0}" == "1" ]]; then
@@ -113,4 +115,4 @@ PY
 fi
 
 # Railway terminates TLS at the edge; Odoo must trust X-Forwarded-* so CSS/JS asset URLs use https://…
-exec /entrypoint.sh odoo --http-port="$HTTP_PORT" --proxy-mode "${FILTER_ARGS[@]}" "${EXTRA[@]}"
+exec /entrypoint.sh odoo "${ODOO_DB_ARGS[@]}" --http-port="$HTTP_PORT" --proxy-mode "${FILTER_ARGS[@]}" "${EXTRA[@]}"
