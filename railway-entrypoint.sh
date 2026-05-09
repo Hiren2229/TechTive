@@ -79,8 +79,10 @@ fi
 
 # Do NOT use -d <db>: after DROP DATABASE, Odoo would crash on every request until DB exists again.
 #
-# db-filter: regex of Postgres DB names shown in Database Manager. Default .* avoids mismatch with DATABASE_URL.
-# For production-only listing set Railway → ODOO_DB_FILTER e.g. (?i)^TechTive_Prod$
+# db-filter: which Postgres DB names appear in Database Manager / selector.
+# Default matches production DB TechTive_Live (?i = case-insensitive for Postgres fold e.g. techtive_live).
+# Railway DATABASE_URL must end with the same name: ...postgresql://...@host:port/TechTive_Live
+# Override: ODOO_DB_FILTER e.g. .* for migrations or (?i)^OtherDb$
 EXTRA=( "$@" )
 if [[ ${#EXTRA[@]} -ge 1 && "${EXTRA[0]}" == "odoo" ]]; then
   EXTRA=( "${EXTRA[@]:1}" )
@@ -88,7 +90,7 @@ fi
 
 FILTER_ARGS=()
 if [[ -n "${DB_NAME_VAL}" ]]; then
-  FILTER_PATTERN="${ODOO_DB_FILTER:-.*}"
+  FILTER_PATTERN="${ODOO_DB_FILTER:-(?i)^TechTive_Live\$}"
   FILTER_ARGS=( "--db-filter=${FILTER_PATTERN}" )
 fi
 
