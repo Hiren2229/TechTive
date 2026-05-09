@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Exit 0 if Odoo schema exists in DB_NAME; exit 1 if empty / needs init."""
+"""Check Odoo DB state for the entrypoint.
+
+Exit codes:
+  0 — database exists and has Odoo tables (ready).
+  1 — database exists but is not initialized (optional auto-init with base).
+  2 — database does not exist (skip auto-init; use Database Manager / restore).
+"""
 from __future__ import annotations
 
 import os
@@ -21,6 +27,11 @@ def main() -> int:
             dbname=db,
             connect_timeout=15,
         )
+    except psycopg2.OperationalError as e:
+        msg = str(e).lower()
+        if "does not exist" in msg:
+            return 2
+        return 1
     except Exception:
         return 1
     try:

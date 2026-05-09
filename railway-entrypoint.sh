@@ -56,21 +56,27 @@ export USER="$DB_USER_VAL"
 export PASSWORD="$DB_PASS_VAL"
 export ODOO_DATABASE_NAME="$DB_NAME_VAL"
 
-# First boot: Railway Postgres DB is empty — install core modules once.
-if [[ -n "${DB_NAME_VAL}" ]] && ! python3 /railway_db_ready.py; then
+# Auto-init base only when the DB exists but has no Odoo tables (not when DB was dropped).
+# Exit 2 from railway_db_ready = database missing → skip (use Database Manager / restore).
+python3 /railway_db_ready.py
+db_status=$?
+
+# Default off: empty DB is for Restore via Database Manager. Set ODOO_AUTO_INIT_BASE=1 for greenfield (-i base).
+if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 1 ]] && [[ "${ODOO_AUTO_INIT_BASE:-0}" == "1" ]]; then
   echo "Initializing Odoo database ${DB_NAME_VAL} (base modules only, no demo data)..." >&2
   /entrypoint.sh odoo -d "$DB_NAME_VAL" -i base --stop-after-init --without-demo=all
 fi
 
-# Docker CMD is typically `odoo`; avoid passing it twice to the stock entrypoint.
+# Do NOT use -d <db>: after DROP DATABASE, Odoo would crash on every request until DB exists again.
+# db-filter limits UI to this DB and auto-selects it once it exists (e.g. after restore).
 EXTRA=( "$@" )
 if [[ ${#EXTRA[@]} -ge 1 && "${EXTRA[0]}" == "odoo" ]]; then
   EXTRA=( "${EXTRA[@]:1}" )
 fi
 
-DB_ARG=()
+FILTER_ARGS=()
 if [[ -n "${DB_NAME_VAL}" ]]; then
-  DB_ARG=( -d "$DB_NAME_VAL" )
+  FILTER_ARGS=( "--db-filter=^${DB_NAME_VAL}$" )
 fi
 
-exec /entrypoint.sh odoo --http-port="$HTTP_PORT" "${DB_ARG[@]}" "${EXTRA[@]}"
+exec /entrypoint.sh odoo --http-port="$HTTP_PORT" "${FILTER_ARGS[@]}" "${EXTRA[@]}"

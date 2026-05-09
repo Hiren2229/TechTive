@@ -42,17 +42,30 @@ def main() -> int:
             ),
             (odoo_pw,),
         )
-    cur.execute(
-        sql.SQL("GRANT ALL PRIVILEGES ON DATABASE {} TO {}").format(
-            sql.Identifier(dbname), sql.Identifier(odoo_user)
+
+    cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (dbname,))
+    db_exists = cur.fetchone() is not None
+    if not db_exists:
+        cur.execute(
+            sql.SQL("CREATE DATABASE {} OWNER {}").format(
+                sql.Identifier(dbname), sql.Identifier(odoo_user)
+            )
         )
-    )
-    # Odoo's Database Manager runs DROP DATABASE as db_user; only owners/superusers can drop.
-    cur.execute(
-        sql.SQL("ALTER DATABASE {} OWNER TO {}").format(
-            sql.Identifier(dbname), sql.Identifier(odoo_user)
+        print(
+            f"Bootstrap: created database {dbname!r} owned by {odoo_user!r}.",
+            file=sys.stderr,
         )
-    )
+    else:
+        cur.execute(
+            sql.SQL("GRANT ALL PRIVILEGES ON DATABASE {} TO {}").format(
+                sql.Identifier(dbname), sql.Identifier(odoo_user)
+            )
+        )
+        cur.execute(
+            sql.SQL("ALTER DATABASE {} OWNER TO {}").format(
+                sql.Identifier(dbname), sql.Identifier(odoo_user)
+            )
+        )
     cur.close()
     conn.close()
 
