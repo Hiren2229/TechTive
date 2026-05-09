@@ -68,7 +68,11 @@ if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 1 ]] && [[ "${ODOO_AUTO_INIT
 fi
 
 # Do NOT use -d <db>: after DROP DATABASE, Odoo would crash on every request until DB exists again.
-# db-filter limits UI to this DB and auto-selects it once it exists (e.g. after restore).
+#
+# db-filter controls which DB names appear in the Database Manager / selector. A strict filter like
+# ^railway$ hides restores that used another name (e.g. TechnoTiv). Default .* lists every Odoo DB on
+# this Postgres instance (fine for single-tenant Railway). Tighten after restore:
+#   Railway → TechTive → Variables → ODOO_DB_FILTER=^railway$
 EXTRA=( "$@" )
 if [[ ${#EXTRA[@]} -ge 1 && "${EXTRA[0]}" == "odoo" ]]; then
   EXTRA=( "${EXTRA[@]:1}" )
@@ -76,7 +80,8 @@ fi
 
 FILTER_ARGS=()
 if [[ -n "${DB_NAME_VAL}" ]]; then
-  FILTER_ARGS=( "--db-filter=^${DB_NAME_VAL}$" )
+  FILTER_PATTERN="${ODOO_DB_FILTER:-.*}"
+  FILTER_ARGS=( "--db-filter=${FILTER_PATTERN}" )
 fi
 
 exec /entrypoint.sh odoo --http-port="$HTTP_PORT" "${FILTER_ARGS[@]}" "${EXTRA[@]}"
