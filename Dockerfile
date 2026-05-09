@@ -1,7 +1,6 @@
 FROM odoo:16
 
-# Persist this path on Railway with a Volume, or filestore (attachments) is lost on every redeploy.
-VOLUME ["/var/lib/odoo"]
+# Do not use Dockerfile VOLUME — Railway rejects it. Add a Railway Volume mounted at /var/lib/odoo on the TechTive service instead.
 
 USER root
 
