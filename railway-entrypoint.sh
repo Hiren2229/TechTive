@@ -84,9 +84,9 @@ fi
 # Do NOT use -d <db>: after DROP DATABASE, Odoo would crash on every request until DB exists again.
 #
 # db-filter: which Postgres DB names appear in Database Manager / selector.
-# Default matches TechTive_* (Live / legacy Prod) while migrating DB names. Tighten later: (?i)^TechTive_Live$
-# DATABASE_URL path must be your real Postgres datname (e.g. TechTive_Live). Drop ?db=TechTive_Prod bookmarks if obsolete.
-# Override: ODOO_DB_FILTER e.g. .*
+# Default = exact DATABASE_URL database name (Railway Postgres uses "railway", not TechTive_*).
+# If default were (?i)^TechTive_.*$ you would see no DBs and stay on the selector forever.
+# Override: ODOO_DB_FILTER e.g. (?i)^TechTive_.*$ or .* for multiple DBs on one server.
 EXTRA=( "$@" )
 if [[ ${#EXTRA[@]} -ge 1 && "${EXTRA[0]}" == "odoo" ]]; then
   EXTRA=( "${EXTRA[@]:1}" )
@@ -94,7 +94,18 @@ fi
 
 FILTER_ARGS=()
 if [[ -n "${DB_NAME_VAL}" ]]; then
-  FILTER_PATTERN="${ODOO_DB_FILTER:-(?i)^TechTive_.*\$}"
+  if [[ -n "${ODOO_DB_FILTER:-}" ]]; then
+    FILTER_PATTERN="$ODOO_DB_FILTER"
+  else
+    FILTER_PATTERN="$(python3 <<'PY'
+import os
+import re
+
+db = os.environ.get("ODOO_DATABASE_NAME", "").strip()
+print(f"(?i)^{re.escape(db)}$" if db else ".*")
+PY
+)"
+  fi
   FILTER_ARGS=( "--db-filter=${FILTER_PATTERN}" )
 fi
 
