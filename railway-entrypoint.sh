@@ -58,8 +58,8 @@ export ODOO_DATABASE_NAME="$DB_NAME_VAL"
 
 # Auto-init base only when the DB exists but has no Odoo tables (not when DB was dropped).
 # Exit 2 from railway_db_ready = database missing → skip (use Database Manager / restore).
-python3 /railway_db_ready.py
-db_status=$?
+db_status=0
+python3 /railway_db_ready.py || db_status=$?
 
 # Default off: empty DB is for Restore via Database Manager. Set ODOO_AUTO_INIT_BASE=1 for greenfield (-i base).
 if [[ -n "${DB_NAME_VAL}" ]] && [[ "$db_status" -eq 1 ]] && [[ "${ODOO_AUTO_INIT_BASE:-0}" == "1" ]]; then
