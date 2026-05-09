@@ -54,6 +54,13 @@ export HOST="$DB_HOST_VAL"
 export PORT="$DB_PORT_VAL"
 export USER="$DB_USER_VAL"
 export PASSWORD="$DB_PASS_VAL"
+export ODOO_DATABASE_NAME="$DB_NAME_VAL"
+
+# First boot: Railway Postgres DB is empty — install core modules once.
+if [[ -n "${DB_NAME_VAL}" ]] && ! python3 /railway_db_ready.py; then
+  echo "Initializing Odoo database ${DB_NAME_VAL} (base modules only, no demo data)..." >&2
+  /entrypoint.sh odoo -d "$DB_NAME_VAL" -i base --stop-after-init --without-demo=all
+fi
 
 # Docker CMD is typically `odoo`; avoid passing it twice to the stock entrypoint.
 EXTRA=( "$@" )
