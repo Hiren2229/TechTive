@@ -10,6 +10,7 @@ COPY project_scrum /mnt/extra-addons/project_scrum
 COPY project_timeline /mnt/extra-addons/project_timeline
 COPY web_timeline /mnt/extra-addons/web_timeline
 COPY techtive_website /mnt/extra-addons/techtive_website
+COPY spiffy_theme_backend /mnt/extra-addons/spiffy_theme_backend
 
 COPY railway_bootstrap_db.py /railway_bootstrap_db.py
 COPY railway_db_ready.py /railway_db_ready.py
